@@ -1,46 +1,96 @@
-# UTS Backend - Sistem Manajemen Data Lahan dan Tanaman
-**Mata Kuliah:** Dasar Pemrograman Backend  
-**Dosen Pengampu:** Sony Panca Budiarto, M.Kom  
-**Nama Mahasiswa:** Galing Surya  
-**NIM:** 1125102206 (Kelas S1-TI / SP3.1)  
+# 🌾 Farm Management System - Backend API (UTS)
+
+Sistem Manajemen Data Lahan dan Tanaman Pertanian (Farm Management System) berbasis RESTful API. Proyek backend ini dibangun menggunakan **Flask** dengan arsitektur berlapis (*Layered Architecture*: Model - Repository - Service - Route), mendayagunakan **SQLAlchemy (MySQL)** sebagai ORM, serta menerapkan transaksi atomik multi-tabel (ACID Compliance).
 
 ---
 
-## 📌 Deskripsi Proyek
-Proyek Backend ini dikembangkan untuk memenuhi Ujian Tengah Semester (UTS) Ganjil Tahun Akademik 2026/2027[cite: 4]. Sistem ini dirancang menggunakan arsitektur berlapis (*Layered Architecture*) dengan pola modular[cite: 4], menerapkan basis data relasional MySQL melalui SQLAlchemy ORM[cite: 4], serta menyediakan *endpoint* RESTful API untuk pengelolaan data lahan pertanian[cite: 4].
+## 🛠️ Teknologi & Stack
+* **Language**: Python 3.x
+* **Framework**: Flask (Application Factory Pattern & Blueprints)
+* **Database & ORM**: MySQL via SQLAlchemy (PyMySQL driver)
+* **Architecture**: Layered Architecture (Model $\rightarrow$ Repository $\rightarrow$ Service $\rightarrow$ Route)
+* **API Standard**: JSON Response Envelope (`success`, `fail`, `error`)
 
-## 🛠️ Tech Stack
-* **Language:** Python 3.x
-* **Framework:** Flask
-* **ORM:** Flask-SQLAlchemy (PyMySQL)
-* **Database:** MySQL / MySQL Workbench
-* **API Testing:** Postman / Thunder Client
+---
 
-## 📁 Struktur Folder Proyek
-Proyek ini menerapkan hierarki folder modular sesuai standar praktikum:
+## 📁 Struktur Direktori Proyek
+
 ```text
 uts_backend_1125102206/
 ├── app/
 │   ├── models/
-│   │   └── farm_model.py   # Skema 3 Tabel Berelasi (Owner -> Land -> Crop)
+│   │   └── farm_model.py         # ORM Model 3 Tabel (Owner, Land, Crop)
+│   ├── repositories/
+│   │   ├── owner_repository.py   # Data Access Layer - Owner
+│   │   ├── land_repository.py    # Data Access Layer - Land
+│   │   └── crop_repository.py    # Data Access Layer - Crop
+│   ├── services/
+│   │   ├── owner_service.py      # Business Logic & Validation - Owner
+│   │   ├── land_service.py       # Business Logic & Validation - Land
+│   │   └── crop_service.py       # Business Logic & Validation - Crop
 │   ├── routes/
-│   │   └── farm_routes.py  # Endpoint CRUD & Transaksi Atomik (Try-Except-Rollback)
-│   ├── __init__.py         # Application Factory Pattern
-│   └── config.py           # Konfigurasi Database MySQL
-├── venv/                   # Virtual Environment
-├── run.py                  # Entry Point Aplikasi
-└── README.md
+│   │   ├── owner_routes.py       # Controller Endpoint CRUD Owner
+│   │   ├── land_routes.py        # Controller Endpoint CRUD Land
+│   │   ├── crop_routes.py        # Controller Endpoint CRUD Crop
+│   │   └── advanced_routes.py    # Multi-Table Transaction (ACID)
+│   ├── utils/
+│   │   └── response_helper.py    # JSON Response Envelope Formatter
+│   └── __init__.py               # Application Factory (`create_app`)
+├── config.py                     # Database Configuration (MySQL Connection String)
+├── run.py                        # Application Entry Point
+├── db_uts_backend.sql            # File Ekspor Database MySQL
+└── README.md                     # Dokumentasi Proyek
+```
 
-Skema Database Relasional (One-to-Many / 1:N)
-Sistem ini terdiri dari 3 tabel utama yang saling berelasi:
+---
 
-owners (Tabel Pemilik Lahan) — Berelasi One-to-Many ke tabel lands.
+## 🚀 Fitur Utamanya
 
-lands (Tabel Lahan) — Berelasi One-to-Many ke tabel crops.
+1. **Full CRUD Operations (3 Entitas Relasional)**:
+   * **Owners** (Pemilik Lahan)
+   * **Lands** (Lahan Pertanian, Relasi 1:N ke Owner)
+   * **Crops** (Tanaman Komoditas, Relasi 1:N ke Land)
+2. **Server-Side Pagination & Search**:
+   * Paginasi berbasis `page` & `per_page`.
+   * Pencarian `search` menggunakan pencocokan substring `.ilike()` (*case-insensitive*).
+3. **Advanced Multi-Table Transaction (ACID Compliance)**:
+   * Penambahan data Owner dan Land secara simultan.
+   * Menggunakan `db.session.flush()` untuk mendapatkan *relational ID* secara instan.
+   * Didukung mekanisme pembatalan otomatis (`db.session.rollback()`) jika terjadi kesalahan internal untuk mencegah korupsi data.
+4. **Validasi Error Berlapis**:
+   * Pengembalian respons standar berformat JSON Envelope dengan HTTP Status Code yang tepat (`200`, `201`, `400`, `404`, `500`).
 
-crops (Tabel Komoditas Tanaman).
+---
 
-🚀 Cara Menjalankan Proyek
-Clone atau buka direktori proyek di dalam terminal/VS Code.
+## 📡 Daftar Endpoint API
 
-Aktifkan virtual environment:
+### 1. Owners (`/api/v1/farm/owners`)
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/farm/owners` | Ambil daftar pemilik (Pagination & Search `?search=...`) |
+| `POST` | `/api/v1/farm/owners` | Tambah data pemilik baru |
+| `PUT` | `/api/v1/farm/owners/<id>` | Perbarui data pemilik berdasarkan ID |
+| `DELETE` | `/api/v1/farm/owners/<id>` | Hapus data pemilik berdasarkan ID |
+
+### 2. Lands (`/api/v1/farm/lands`)
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/farm/lands` | Ambil seluruh daftar lahan (Pagination & Search) |
+| `POST` | `/api/v1/farm/lands` | Tambah data lahan baru (`owner_id` required) |
+| `PUT` | `/api/v1/farm/lands/<id>` | Perbarui data lahan berdasarkan ID |
+| `DELETE` | `/api/v1/farm/lands/<id>` | Hapus data lahan berdasarkan ID |
+
+### 3. Crops (`/api/v1/farm/crops`)
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/farm/crops` | Ambil seluruh data tanaman komoditas |
+| `POST` | `/api/v1/farm/crops` | Tambah data tanaman baru (`land_id` required) |
+| `PUT` | `/api/v1/farm/crops/<id>` | Perbarui data tanaman berdasarkan ID |
+| `DELETE` | `/api/v1/farm/crops/<id>` | Hapus data tanaman berdasarkan ID |
+
+### 4. Advanced Transaction (`/api/v1/farm/advanced`)
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/farm/advanced/owner-with-land` | Buat Owner & Land sekaligus dalam 1 transaksi atomik |
+
+---
